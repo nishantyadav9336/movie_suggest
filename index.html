@@ -1,0 +1,328 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodFlix | Find Your Perfect Movie or Series</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for a clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to enhance Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* A deep, dark blue-gray */
+        }
+        .mood-btn, .filter-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .mood-btn:hover, .filter-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+        .filter-btn.active {
+             background-color: #dc2626; /* Red-600 */
+             color: white;
+             box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+        }
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 20px 25px -5px rgba(220, 38, 38, 0.2), 0 10px 10px -5px rgba(220, 38, 38, 0.1);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        .modal {
+            display: none; /* Hidden by default */
+        }
+        .modal.flex {
+            display: flex;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-white antialiased">
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm relative">
+            <h2 class="text-2xl font-bold text-center mb-6">Login to MoodFlix</h2>
+            <form id="login-form">
+                <input type="email" placeholder="Email Address" class="w-full bg-gray-700 p-3 rounded mb-4 text-white" required>
+                <input type="password" placeholder="Password" class="w-full bg-gray-700 p-3 rounded mb-6 text-white" required>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded">Login</button>
+            </form>
+            <button class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+        </div>
+    </div>
+    <!-- Sign Up Modal -->
+    <div id="signup-modal" class="modal fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm relative">
+            <h2 class="text-2xl font-bold text-center mb-6">Sign Up for MoodFlix</h2>
+            <form id="signup-form">
+                <input type="text" placeholder="Your Name" class="w-full bg-gray-700 p-3 rounded mb-4 text-white" required>
+                <input type="email" placeholder="Email Address" class="w-full bg-gray-700 p-3 rounded mb-4 text-white" required>
+                <input type="password" placeholder="Create Password" class="w-full bg-gray-700 p-3 rounded mb-6 text-white" required>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded">Create Account</button>
+            </form>
+             <button class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+        </div>
+    </div>
+
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <!-- Header Section -->
+        <header class="text-center mb-10 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold text-red-600 tracking-tight">MoodFlix</h1>
+                <p class="text-lg md:text-xl text-gray-300 mt-2">Your universe of entertainment awaits.</p>
+            </div>
+            <div id="user-actions" class="mt-4 md:mt-0">
+                <button id="login-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Login</button>
+                <button id="signup-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg ml-2">Sign Up</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Search and Filter Section -->
+            <section class="bg-gray-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg mb-12 max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <form id="search-form">
+                        <input id="search-input" type="search" placeholder="Search for a movie or TV series..." class="w-full bg-gray-700 p-4 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </form>
+                    <div class="grid grid-cols-2 gap-4">
+                       <div>
+                           <h3 class="font-semibold mb-2 text-center text-gray-300">Content Type</h3>
+                           <div id="media-type-filter" class="flex bg-gray-700 rounded-lg p-1">
+                               <button data-value="movie" class="filter-btn w-1/2 rounded-md py-2 text-sm font-medium active">Movies</button>
+                               <button data-value="tv" class="filter-btn w-1/2 rounded-md py-2 text-sm font-medium">TV Series</button>
+                           </div>
+                       </div>
+                       <div>
+                           <h3 class="font-semibold mb-2 text-center text-gray-300">Origin</h3>
+                           <div id="origin-filter" class="flex bg-gray-700 rounded-lg p-1">
+                               <button data-value="hollywood" class="filter-btn w-1/2 rounded-md py-2 text-sm font-medium active">Hollywood</button>
+                               <button data-value="bollywood" class="filter-btn w-1/2 rounded-md py-2 text-sm font-medium">Bollywood</button>
+                           </div>
+                       </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Mood Selection Section -->
+            <section id="mood-selector" class="mb-12 max-w-4xl mx-auto">
+                <h2 class="text-2xl font-semibold text-center mb-6">Or, find something based on your mood...</h2>
+                <div id="mood-buttons" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
+                    <!-- Mood buttons will be dynamically generated -->
+                </div>
+            </section>
+
+            <!-- Movie Results Section -->
+            <section id="results-container" class="mt-8">
+                <p class="text-center text-gray-400">Use the search, filters, or select a mood to begin.</p>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p> </p>
+        </footer>
+    </div>
+
+    <script>
+        const apiKey = 'b3779d06e235b3b122ac521d1a8627d8';
+        const moods = {
+            happy: { genre: 'Comedy', emoji: '😄', label: 'Happy / Cheerful', color: 'yellow' },
+            sad: { genre: 'Drama', emoji: '😢', label: 'A Bit Down', color: 'blue' },
+            adventurous: { genre: 'Adventure', emoji: '🤠', label: 'Adventurous', color: 'orange' },
+            romantic: { genre: 'Romance', emoji: '🥰', label: 'In the Mood for Love', color: 'pink' },
+            scared: { genre: 'Horror', emoji: '😱', label: 'Need a Scare', color: 'purple' },
+            thoughtful: { genre: 'Documentary', emoji: '🤔', label: 'Thought-Provoking', color: 'indigo' },
+        };
+        const genreMap = {
+            movie: { Comedy: 35, Drama: 18, Adventure: 12, Romance: 10749, Horror: 27, Documentary: 99 },
+            tv: { Comedy: 35, Drama: 18, Adventure: 10759, Romance: 10749, Horror: 27, Documentary: 99 } // Note: TV adventure has a different ID
+        };
+        const colorClasses = {
+            yellow: 'bg-yellow-500 hover:bg-yellow-400', blue: 'bg-blue-600 hover:bg-blue-500',
+            orange: 'bg-orange-500 hover:bg-orange-400', pink: 'bg-pink-500 hover:bg-pink-400',
+            purple: 'bg-purple-600 hover:bg-purple-500', indigo: 'bg-indigo-600 hover:bg-indigo-500'
+        };
+
+        // State variables
+        let mediaType = 'movie';
+        let origin = 'hollywood';
+
+        // DOM Elements
+        const moodButtonsContainer = document.getElementById('mood-buttons');
+        const resultsContainer = document.getElementById('results-container');
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const mediaTypeFilter = document.getElementById('media-type-filter');
+        const originFilter = document.getElementById('origin-filter');
+
+        // Modal Elements
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+        const userActions = document.getElementById('user-actions');
+
+        function toggleModal(modal, show) {
+            if (show) {
+                modal.classList.add('flex');
+            } else {
+                modal.classList.remove('flex');
+            }
+        }
+        
+        function setupModal(openBtn, modal, form) {
+            openBtn.addEventListener('click', () => toggleModal(modal, true));
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.closest('.modal-close')) {
+                    toggleModal(modal, false);
+                }
+            });
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                toggleModal(modal, false);
+                const name = form.querySelector('input[type="text"]')?.value || 'User';
+                userActions.innerHTML = `<p class="font-semibold text-lg">Welcome, ${name}!</p>`;
+            });
+        }
+
+        function displayMoodButtons() {
+            moodButtonsContainer.innerHTML = '';
+            for (const mood in moods) {
+                const moodData = moods[mood];
+                const genreId = genreMap[mediaType][moodData.genre];
+                if (!genreId) continue;
+                
+                const button = document.createElement('button');
+                button.dataset.genre = genreId;
+                button.className = `mood-btn text-white font-semibold py-4 px-2 rounded-lg shadow-md flex flex-col items-center justify-center text-center ${colorClasses[moodData.color]}`;
+                button.innerHTML = `<span class="text-3xl mb-2">${moodData.emoji}</span><span>${moodData.label}</span>`;
+                moodButtonsContainer.appendChild(button);
+            }
+        }
+
+        async function fetchAndDisplay(url) {
+            resultsContainer.innerHTML = `<div class="flex flex-col items-center justify-center text-center p-8"><div class="loader mb-4"></div><p class="text-lg text-gray-300">Searching the cosmos for great titles...</p></div>`;
+            if (apiKey === 'YOUR_API_KEY' || !apiKey) {
+                displayError("API Key is missing. Please add your TMDB API key in the script.");
+                return;
+            }
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                const data = await response.json();
+                const validMedia = data.results.filter(item => item.poster_path);
+                if (validMedia.length > 0) {
+                    displayMedia(validMedia.slice(0, 18));
+                } else {
+                    displayError("No results found. Try adjusting your search or filters.");
+                }
+            } catch (error) {
+                console.error('Error fetching media:', error);
+                displayError("Something went wrong. Please check the console and try again.");
+            }
+        }
+
+        function displayMedia(media) {
+            resultsContainer.innerHTML = '';
+            const resultsGrid = document.createElement('div');
+            resultsGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6';
+            media.forEach(item => {
+                const title = item.title || item.name;
+                const releaseDate = (item.release_date || item.first_air_date || 'N/A').substring(0, 4);
+                const itemUrl = `https://www.themoviedb.org/${item.media_type || mediaType}/${item.id}`;
+                const downloadSearchQuery = `https://filmyfly.dog//search?q=how+to+watch+or+download+${encodeURIComponent(title)}`;
+
+                const card = document.createElement('div');
+                card.className = 'movie-card bg-gray-800 rounded-lg overflow-hidden shadow-xl flex flex-col';
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="Poster for ${title}" class="w-full h-auto object-cover" loading="lazy">
+                        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-yellow-400 font-bold text-sm px-2 py-1 rounded-full">⭐ ${item.vote_average.toFixed(1)}</div>
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="text-md font-bold text-gray-100 flex-grow mb-2">${title}</h3>
+                        <p class="text-sm text-gray-400 mt-1 mb-3">${releaseDate}</p>
+                        <div class="mt-auto grid grid-cols-2 gap-2">
+                             <a href="${itemUrl}" target="_blank" class="text-center bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-2 px-2 rounded-lg transition-colors">Details</a>
+                             <a href="${downloadSearchQuery}" target="_blank" class="text-center bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2 px-2 rounded-lg transition-colors">Watch/Download</a>
+                        </div>
+                    </div>`;
+                resultsGrid.appendChild(card);
+            });
+            resultsContainer.appendChild(resultsGrid);
+        }
+        
+        function displayError(message) {
+             resultsContainer.innerHTML = `<div class="text-center p-8 bg-red-900/50 rounded-lg max-w-md mx-auto"><p class="text-lg font-semibold text-red-300">${message}</p></div>`;
+        }
+
+        function handleFilterChange(container, value) {
+            Array.from(container.children).forEach(btn => btn.classList.remove('active'));
+            const activeBtn = Array.from(container.children).find(btn => btn.dataset.value === value);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        mediaTypeFilter.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                mediaType = e.target.dataset.value;
+                handleFilterChange(mediaTypeFilter, mediaType);
+                displayMoodButtons(); // Refresh mood buttons for correct genre IDs
+                searchInput.placeholder = `Search for a ${mediaType === 'movie' ? 'movie' : 'TV series'}...`;
+                if(searchInput.value) searchForm.requestSubmit(); // Re-run search if there is a query
+            }
+        });
+        
+        originFilter.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                origin = e.target.dataset.value;
+                handleFilterChange(originFilter, origin);
+                if(searchInput.value) searchForm.requestSubmit();
+            }
+        });
+
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            if (!query) return;
+            const originCountry = origin === 'bollywood' ? 'IN' : '';
+            let url = `https://api.themoviedb.org/3/search/${mediaType}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&include_adult=false`;
+            if (originCountry) url += `&region=${originCountry}`;
+            fetchAndDisplay(url);
+        });
+
+        moodButtonsContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button && button.dataset.genre) {
+                const genreId = button.dataset.genre;
+                const originCountry = origin === 'bollywood' ? 'IN' : 'US';
+                const url = `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${apiKey}&with_genres=${genreId}&with_origin_country=${originCountry}&sort_by=vote_average.desc&vote_count.gte=500&language=en-US&include_adult=false`;
+                fetchAndDisplay(url);
+            }
+        });
+
+        // --- INITIALIZATION ---
+        setupModal(loginBtn, loginModal, document.getElementById('login-form'));
+        setupModal(signupBtn, signupModal, document.getElementById('signup-form'));
+        displayMoodButtons();
+    </script>
+</body>
+</html>
+
